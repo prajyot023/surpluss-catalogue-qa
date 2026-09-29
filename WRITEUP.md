@@ -263,7 +263,10 @@ should never be the last line of defence for a price.
 - **Setup:** no Docker on my machine (and no WSL). I ran Postgres 18 from the
   `embedded-postgres` npm package, outside the project, with the same user,
   password, database and port 5544 as `docker-compose.yml`. The project needed
-  no changes.
+  no changes. Later I installed WSL and Docker Desktop and re-ran everything
+  the documented way (`docker compose up -d`, migrate, seed): same results,
+  with 66 Vitest tests passing, the 15 bug tests failing, and the e2e test
+  passing.
 - **Running the e2e against an already-running dev server:**
   `PLAYWRIGHT_SKIP_WEBSERVER=1 npm run test:e2e`.
 - **"Add items to an enquiry":** this app sends one product per enquiry. There
