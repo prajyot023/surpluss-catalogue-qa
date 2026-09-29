@@ -1,0 +1,22 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: catalogue-qa-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: catalogue
+      POSTGRES_PASSWORD: catalogue
+      POSTGRES_DB: catalogue
+    # 5544 on the host, so this never collides with a Postgres you already run.
+    ports:
+      - "5544:5432"
+    volumes:
+      - catalogue-qa-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U catalogue -d catalogue"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  catalogue-qa-data:

@@ -1,0 +1,295 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  --font-sans: var(--font-ibm-plex-sans), "IBM Plex Sans", ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --ink: #0b1f3a;
+  --muted: oklch(0.97 0 0);
+  --line: #e5e9ef;
+  --surface: #f6f7f9;
+  --yellow: #ffd447;
+  --contact: #1f4e8c;
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+  --primary: oklch(0.205 0 0);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.97 0 0);
+  --secondary-foreground: oklch(0.205 0 0);
+  --muted-foreground: oklch(0.556 0 0);
+  --accent: oklch(0.97 0 0);
+  --accent-foreground: oklch(0.205 0 0);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.922 0 0);
+  --input: oklch(0.922 0 0);
+  --ring: oklch(0.708 0 0);
+  /* Brand-anchored chart ramp: navy (#0b1f3a) and yellow (#ffd447) plus supporting hues. */
+  --chart-1: oklch(0.42 0.1 258);
+  --chart-2: oklch(0.85 0.15 95);
+  --chart-3: oklch(0.62 0.11 220);
+  --chart-4: oklch(0.55 0.15 262);
+  --chart-5: oklch(0.72 0.14 60);
+  --radius: 0.625rem;
+  --sidebar: oklch(0.985 0 0);
+  --sidebar-foreground: oklch(0.145 0 0);
+  --sidebar-primary: oklch(0.205 0 0);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.97 0 0);
+  --sidebar-accent-foreground: oklch(0.205 0 0);
+  --sidebar-border: oklch(0.922 0 0);
+  --sidebar-ring: oklch(0.708 0 0);
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0;
+  color: var(--ink);
+  background: #fff;
+  -webkit-font-smoothing: antialiased;
+}
+button, input, select, textarea { font: inherit; }
+button, a { -webkit-tap-highlight-color: transparent; }
+::selection { background: #ffe889; color: var(--ink); }
+.hide-scrollbar { scrollbar-width: none; }
+.hide-scrollbar::-webkit-scrollbar { display: none; }
+.focus-ring:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+
+/* Shared minimal treatment for every Sonner notification. */
+.toaster [data-sonner-toast].surpluss-toast[data-styled="true"] {
+  min-height: 54px;
+  gap: 10px;
+  padding: 11px 40px 11px 14px;
+  border: 1px solid #e2e6eb;
+  background: #fff;
+  color: var(--ink);
+  box-shadow:
+    0 10px 30px rgba(11, 31, 58, 0.1),
+    0 2px 7px rgba(11, 31, 58, 0.06);
+}
+.toaster .surpluss-toast-title {
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.4;
+  letter-spacing: -0.01em;
+}
+.toaster [data-sonner-toast][data-styled="true"] .surpluss-toast-description {
+  margin-top: 1px;
+  color: #667085;
+  font-size: 12px;
+  line-height: 1.4;
+}
+.toaster [data-sonner-toast][data-styled="true"] .surpluss-toast-icon {
+  display: flex;
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  align-items: center;
+  justify-content: center;
+  color: #667085;
+}
+.toaster [data-sonner-toast][data-type="success"] .surpluss-toast-icon { color: #287044; }
+.toaster [data-sonner-toast][data-type="error"] .surpluss-toast-icon { color: #b5474f; }
+.toaster [data-sonner-toast][data-type="warning"] .surpluss-toast-icon { color: #a15c08; }
+.toaster [data-sonner-toast][data-type="info"] .surpluss-toast-icon { color: #356a9a; }
+.toaster [data-sonner-toast][data-styled="true"] .surpluss-toast-close {
+  inset: 50% 11px auto auto;
+  width: 24px;
+  height: 24px;
+  transform: translateY(-50%);
+  border: 1px solid transparent;
+  background: transparent;
+  color: #98a2b3;
+  opacity: 0;
+  transition: color 160ms ease, background 160ms ease, opacity 160ms ease;
+}
+.toaster [data-sonner-toast]:hover .surpluss-toast-close,
+.toaster [data-sonner-toast]:focus-within .surpluss-toast-close {
+  opacity: 1;
+}
+.toaster [data-sonner-toast][data-styled="true"] .surpluss-toast-close:hover {
+  border-color: #edf0f3;
+  background: #f4f5f7;
+  color: var(--ink);
+}
+.toaster [data-sonner-toast][data-styled="true"] .surpluss-toast-action {
+  border-radius: 6px;
+  background: var(--ink);
+  color: #fff;
+  font-weight: 600;
+}
+.toaster [data-sonner-toast][data-styled="true"] .surpluss-toast-cancel {
+  border-radius: 6px;
+  background: #f1f3f5;
+  color: var(--ink);
+}
+@media (hover: none) {
+  .toaster [data-sonner-toast] .surpluss-toast-close { opacity: 1; }
+}
+
+@theme inline {
+  --font-heading: var(--font-sans);
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-ibm-plex-mono), "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  /* Brand identity: use bg-brand / text-gold / hover:bg-brand-hover etc. — never raw hex in components. */
+  --color-brand: var(--ink);
+  --color-brand-hover: #173453;
+  --color-contact: var(--contact);
+  --color-gold: var(--yellow);
+  --color-gold-hover: #f2c73c;
+  --color-whatsapp: #25d366;
+  --color-whatsapp-hover: #1fb855;
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-foreground: var(--foreground);
+  --color-background: var(--background);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+  --animate-marquee: marquee var(--duration) infinite linear;
+  --animate-marquee-vertical: marquee-vertical var(--duration) linear infinite;
+  @keyframes marquee {
+  from {
+    transform: translateX(0);
+    }
+  to {
+    transform: translateX(calc(-100% - var(--gap)));
+    }
+  }
+  @keyframes marquee-vertical {
+  from {
+    transform: translateY(0);
+    }
+  to {
+    transform: translateY(calc(-100% - var(--gap)));
+    }
+  }
+}
+
+.dark {
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.205 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.922 0 0);
+  --primary-foreground: oklch(0.205 0 0);
+  --secondary: oklch(0.269 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: oklch(0.269 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.556 0 0);
+  /* Brighter variants of the brand chart ramp for dark surfaces. */
+  --chart-1: oklch(0.68 0.12 258);
+  --chart-2: oklch(0.87 0.16 95);
+  --chart-3: oklch(0.72 0.12 220);
+  --chart-4: oklch(0.62 0.16 262);
+  --chart-5: oklch(0.76 0.15 60);
+  --sidebar: oklch(0.205 0 0);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.488 0.243 264.376);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.269 0 0);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.556 0 0);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-weight: 400;
+  }
+  html {
+    @apply font-sans;
+  }
+
+  /* IBM Plex Sans weight scale by text type. Utility classes
+     (font-medium, font-semibold, …) still override these. */
+  h1 {
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+  h2 {
+    font-weight: 700;
+    letter-spacing: -0.015em;
+  }
+  h3,
+  h4 {
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+  h5,
+  h6 {
+    font-weight: 600;
+  }
+  p,
+  li,
+  td {
+    font-weight: 400;
+  }
+  strong,
+  b,
+  dt,
+  th,
+  legend,
+  summary {
+    font-weight: 600;
+  }
+  label,
+  button,
+  figcaption {
+    font-weight: 500;
+  }
+  small,
+  caption {
+    font-weight: 400;
+  }
+}

@@ -1,0 +1,82 @@
+name: tests
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# Same values as .env.example; the database is a throwaway container.
+env:
+  DATABASE_URL: postgresql://catalogue:catalogue@localhost:5544/catalogue
+  DIRECT_URL: postgresql://catalogue:catalogue@localhost:5544/catalogue
+  AUTH_SECRET: ci-only-secret-at-least-32-characters-long
+  NEXTAUTH_URL: http://localhost:3001
+  APP_URL: http://localhost:3001
+
+jobs:
+  # Blocks merge: type errors and lint errors are cheap to fix and never "flaky".
+  static:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: npm }
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run lint
+
+  # Blocks merge: unit, API and access-control tests against a real Postgres.
+  # These include the security tests; a red one here means data can leak.
+  vitest:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env: { POSTGRES_USER: catalogue, POSTGRES_PASSWORD: catalogue, POSTGRES_DB: catalogue }
+        ports: ["5544:5432"]
+        options: --health-cmd "pg_isready -U catalogue" --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: npm }
+      - run: npm ci
+      - run: npx prisma generate
+      - run: npm run db:deploy
+      - run: npm run db:seed
+      - run: npm test
+
+  # Blocks merge on a real failure. It runs against a production build (not
+  # `next dev`) so it is faster and closer to what buyers get. A test that
+  # only passes on retry is reported by Playwright as "flaky": that should
+  # warn and get a ticket, not block the merge.
+  e2e:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env: { POSTGRES_USER: catalogue, POSTGRES_PASSWORD: catalogue, POSTGRES_DB: catalogue }
+        ports: ["5544:5432"]
+        options: --health-cmd "pg_isready -U catalogue" --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      PLAYWRIGHT_SKIP_WEBSERVER: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: npm }
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run db:deploy
+      - run: npm run db:seed
+      - run: npm run build
+      - name: Start the app and wait until it answers
+        run: |
+          npm run start &
+          npx --yes wait-on --timeout 120000 http://localhost:3001/api/health
+      - run: npm run test:e2e
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            playwright-report/
+            test-results/

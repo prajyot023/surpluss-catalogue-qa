@@ -1,0 +1,1 @@
+ALTER TABLE "catalogues" ADD COLUMN "banners" JSONB NOT NULL DEFAULT '[]';

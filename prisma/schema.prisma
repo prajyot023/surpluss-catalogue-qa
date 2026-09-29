@@ -1,0 +1,253 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum CatalogueStatus {
+  draft
+  published
+  inactive
+  expired
+
+  @@map("catalogue_status")
+}
+
+enum EnquiryStatus {
+  new
+  contacted
+  qualified
+  won
+  lost
+  spam
+
+  @@map("enquiry_status")
+}
+
+enum AttributeType {
+  text
+  number
+  date
+  single_select
+  multi_select
+
+  @@map("attribute_type")
+}
+
+model Catalogue {
+  id                   String                @id @default(uuid()) @db.Uuid
+  name                 String
+  slug                 String                @unique
+  description          String                @default("")
+  category             String?
+  currency             String                @default("INR") @db.Char(3)
+  status               CatalogueStatus       @default(draft)
+  // Up to 3 promo banners: [{ imageUrl, filter: { category, sort, minDiscount } | null }]
+  banners              Json                  @default("[]")
+  coverImageUrl        String?               @map("cover_image_url")
+  notifyNumber         String?               @map("notify_number")
+  expiresAt            DateTime?             @map("expires_at") @db.Timestamptz
+  publishedAt          DateTime?             @map("published_at") @db.Timestamptz
+  createdAt            DateTime              @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt            DateTime              @updatedAt @map("updated_at") @db.Timestamptz
+  listings             CatalogueListing[]
+  attributeDefinitions AttributeDefinition[]
+  enquiries            Enquiry[]
+
+  @@map("catalogues")
+}
+
+model Product {
+  id             String             @id @default(uuid()) @db.Uuid
+  sku            String             @unique
+  name           String
+  brand          String?
+  category       String?
+  description    String             @default("")
+  mrp            Decimal?           @db.Decimal(14, 2)
+  offerPrice     Decimal?           @map("offer_price") @db.Decimal(14, 2)
+  priceOnRequest Boolean            @default(false) @map("price_on_request")
+  quantity       Int                @default(0)
+  moq            Int                @default(1)
+  imageUrls      String[]           @default([]) @map("image_urls")
+  attributes     Json               @default("{}")
+  // Retired from the library (soft delete). Archiving removes all catalogue
+  // listings; restore clears this and the product returns unlisted.
+  archivedAt     DateTime?          @map("archived_at") @db.Timestamptz
+  createdAt      DateTime           @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt      DateTime           @updatedAt @map("updated_at") @db.Timestamptz
+  listings       CatalogueListing[]
+  stocks         ProductStock[]
+
+  @@map("products")
+}
+
+// A city where stock can sit. Keyed by Google Places place_id so the same
+// city typed twice always resolves to one row ("manual:<name>" ids are the
+// no-API-key fallback).
+model City {
+  id        String         @id @default(uuid()) @db.Uuid
+  placeId   String         @unique @map("place_id")
+  name      String
+  // Secondary text from Places, e.g. "Maharashtra, India".
+  region    String?
+  createdAt DateTime       @default(now()) @map("created_at") @db.Timestamptz
+  stocks    ProductStock[]
+
+  @@map("cities")
+}
+
+// Per-city stock for a product. While a product has any of these rows,
+// products.quantity is derived (sum of them) and kept in sync in the same
+// transaction as every write here.
+model ProductStock {
+  id        String   @id @default(uuid()) @db.Uuid
+  productId String   @map("product_id") @db.Uuid
+  cityId    String   @map("city_id") @db.Uuid
+  quantity  Int      @default(0)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  city      City     @relation(fields: [cityId], references: [id], onDelete: Restrict)
+
+  @@unique([productId, cityId])
+  @@index([cityId])
+  @@map("product_stocks")
+}
+
+model CatalogueListing {
+  id           String        @id @default(uuid()) @db.Uuid
+  catalogueId  String        @map("catalogue_id") @db.Uuid
+  productId    String        @map("product_id") @db.Uuid
+  isVisible    Boolean       @default(true) @map("is_visible")
+  displayOrder Int           @default(0) @map("display_order")
+  // Up to 3 promo badges shown on the product photo: [{ text, color }]
+  // where color is a key from the curated preset set in src/lib/badges.ts.
+  badges       Json          @default("[]")
+  createdAt    DateTime      @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt    DateTime      @updatedAt @map("updated_at") @db.Timestamptz
+  catalogue    Catalogue     @relation(fields: [catalogueId], references: [id], onDelete: Cascade)
+  product      Product       @relation(fields: [productId], references: [id], onDelete: Restrict)
+  enquiryItems EnquiryItem[]
+
+  @@unique([catalogueId, productId])
+  @@index([catalogueId, displayOrder])
+  @@map("catalogue_listings")
+}
+
+// Saved badge library: reusable { text, bg, fg } presets an admin applies to
+// listings. Applying copies the values inline, so deleting a preset never
+// touches badges already on products.
+model BadgePreset {
+  id        String   @id @default(uuid()) @db.Uuid
+  text      String
+  bg        String
+  fg        String
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  @@map("badge_presets")
+}
+
+model AttributeTemplate {
+  id          String                @id @default(uuid()) @db.Uuid
+  name        String                @unique
+  category    String?
+  createdAt   DateTime              @default(now()) @map("created_at") @db.Timestamptz
+  definitions AttributeDefinition[]
+
+  @@map("attribute_templates")
+}
+
+model AttributeDefinition {
+  id           String             @id @default(uuid()) @db.Uuid
+  templateId   String?            @map("template_id") @db.Uuid
+  catalogueId  String?            @map("catalogue_id") @db.Uuid
+  key          String
+  label        String
+  type         AttributeType      @default(text)
+  options      Json               @default("[]")
+  isFilterable Boolean            @default(false) @map("is_filterable")
+  displayOrder Int                @default(0) @map("display_order")
+  template     AttributeTemplate? @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  catalogue    Catalogue?         @relation(fields: [catalogueId], references: [id], onDelete: Cascade)
+
+  @@map("attribute_definitions")
+}
+
+model Enquiry {
+  id               String        @id @default(uuid()) @db.Uuid
+  reference        String        @unique
+  catalogueId      String        @map("catalogue_id") @db.Uuid
+  buyerName        String        @map("buyer_name")
+  company          String?
+  phoneCountryCode String        @default("+91") @map("phone_country_code")
+  phone            String
+  email            String?
+  location         String?
+  referralPerson   String?       @map("referral_person")
+  message          String?
+  status           EnquiryStatus @default(new)
+  internalNotes    String?       @map("internal_notes")
+  createdAt        DateTime      @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt        DateTime      @updatedAt @map("updated_at") @db.Timestamptz
+  catalogue        Catalogue     @relation(fields: [catalogueId], references: [id], onDelete: Restrict)
+  items            EnquiryItem[]
+
+  @@index([status, createdAt])
+  @@index([catalogueId, createdAt])
+  @@map("enquiries")
+}
+
+model EnquiryItem {
+  id                 String            @id @default(uuid()) @db.Uuid
+  enquiryId          String            @map("enquiry_id") @db.Uuid
+  catalogueListingId String?           @map("catalogue_listing_id") @db.Uuid
+  requestedQuantity  Int               @map("requested_quantity")
+  // Snapshot taken when the enquiry is sent, so lead history survives
+  // listing removal and later price changes.
+  productName        String            @default("") @map("product_name")
+  productSku         String            @default("") @map("product_sku")
+  productBrand       String?           @map("product_brand")
+  unitPrice          Decimal?          @map("unit_price") @db.Decimal(14, 2)
+  enquiry            Enquiry           @relation(fields: [enquiryId], references: [id], onDelete: Cascade)
+  catalogueListing   CatalogueListing? @relation(fields: [catalogueListingId], references: [id], onDelete: SetNull)
+
+  @@unique([enquiryId, catalogueListingId])
+  @@map("enquiry_items")
+}
+
+model ImportJob {
+  id            String   @id @default(uuid()) @db.Uuid
+  fileName      String   @map("file_name")
+  status        String   @default("mapping")
+  columnMapping Json     @default("{}") @map("column_mapping")
+  rowCount      Int      @default(0) @map("row_count")
+  validCount    Int      @default(0) @map("valid_count")
+  errorCount    Int      @default(0) @map("error_count")
+  errors        Json     @default("[]")
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  @@map("import_jobs")
+}
+
+enum UserRole {
+  admin
+  staff
+
+  @@map("user_role")
+}
+
+// Portal sign-in. `staff` covers the sales team: they work catalogues, products
+// and leads. `admin` additionally publishes and deletes catalogues.
+model AdminUser {
+  id           String   @id @default(uuid()) @db.Uuid
+  email        String   @unique
+  name         String
+  role         UserRole @default(staff)
+  passwordHash String   @map("password_hash")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  @@map("admin_users")
+}
