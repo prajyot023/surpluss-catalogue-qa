@@ -266,6 +266,12 @@ should never be the last line of defence for a price.
   no changes.
 - **Running the e2e against an already-running dev server:**
   `PLAYWRIGHT_SKIP_WEBSERVER=1 npm run test:e2e`.
+- **"Add items to an enquiry":** this app sends one product per enquiry. There
+  is no cart; the buyer picks a quantity for one product in the "Contact Us"
+  dialog. So the e2e journey adds one product with a quantity above its MOQ.
+  The API itself accepts several items in one enquiry (`items` is a list), but
+  no screen sends more than one. I did not test a multi-item enquiry; that
+  would be my next API test.
 - **Assumption:** "expired" means the end of the validity date in India time.
   The code stores it as 23:59:59 IST, and I kept that.
 - **Unsure:** whether a staff member should be able to *unpublish*. The
